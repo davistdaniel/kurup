@@ -1,6 +1,6 @@
 # Welcome to kurup!
 <div align="center">
-  <img src="./static/logo.webp" alt="kurup logo" width="200"/>
+  <img src="./static/logo.webp" alt="kurup logo" width="400"/>
   <br/>
   <br/>
   
