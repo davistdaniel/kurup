@@ -23,36 +23,6 @@
 - **Export** - Download notes as zip files with images included
 - **Simple Interface** - Simple, no-frills and lightweight
 
-## 📸 Screenshots
-
-<!-- Add your screenshots here -->
-<div align="center">
-  <img src="./static/screenshot.svg" alt="kurup logo" width="1000"/>
-</div>
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.11 or higher
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/davistdaniel/kurup
-cd kurup
-
-# Install dependencies
-python -m pip install "nicegui>=2.17.0"
-
-# Run the application
-python main.py
-
-# Open your webrowser and navigate to:
-http://localhost:9494
-```
-
 ## 💻 Usage
 
 ### Creating a Note
@@ -85,6 +55,50 @@ In the "Saved" tab you can:
 <div align="center">
   <img src="./static/gif2.gif" alt="managing_notes" width="1000"/>
 </div>
+
+## 📸 Screenshots
+
+<!-- Add your screenshots here -->
+<div align="center">
+  <img src="./static/screenshot.svg" alt="kurup logo" width="1000"/>
+</div>
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.11 or higher
+
+### Python
+
+```bash
+# Clone the repository
+git clone https://github.com/davistdaniel/kurup
+cd kurup
+
+# Install dependencies
+python -m pip install "nicegui>=2.17.0"
+
+# Run the application
+python main.py
+
+# Open your web browser and navigate to:
+http://localhost:9494
+```
+
+### Docker (using NiceGUI's docker image)
+```bash
+# Clone the repository
+git clone https://github.com/davistdaniel/kurup
+cd kurup
+
+# start the container, you can edit docker-compose.yml to configure
+sudo docker compose up -d
+
+# Open your web browser and navigate to:
+http://localhost:9494
+```
+
 
 ## ⚙️ Configuration
 
