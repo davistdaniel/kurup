@@ -15,7 +15,7 @@ You can write text with:
 
 - **Bold**
 - *Italic*
-- ~~Strikethrough~~
+- <s>Strikethrough</s>
 - `Inline code`
 
 ### 📋 Lists
