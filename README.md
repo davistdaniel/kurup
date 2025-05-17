@@ -126,5 +126,5 @@ kurup uses a simple approach to note management:
 Feel free to fork and contribute! Feature ideas or bug fixes are always welcome.
 
 ## 📜 License
-
+This project is licensed under the terms of the GNU General Public License v3.0.
 
