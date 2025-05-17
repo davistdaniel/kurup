@@ -23,6 +23,13 @@
 - **Export** - Download notes as zip files with images included
 - **Simple Interface** - Simple, no-frills and lightweight
 
+## 📸 Screenshots
+
+<!-- Add your screenshots here -->
+<div align="center">
+  <img src="./static/screenshot.svg" alt="kurup logo" width="1000"/>
+</div>
+
 ## 💻 Usage
 
 ### Creating a Note
@@ -56,12 +63,6 @@ In the "Saved" tab you can:
   <img src="./static/gif2.gif" alt="managing_notes" width="1000"/>
 </div>
 
-## 📸 Screenshots
-
-<!-- Add your screenshots here -->
-<div align="center">
-  <img src="./static/screenshot.svg" alt="kurup logo" width="1000"/>
-</div>
 
 ## 🚀 Getting Started
 
