@@ -1,0 +1,22 @@
+[project]
+name = "kurup"
+version = "0.1.0"
+description = "A modern Python app powered by NiceGUI"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "nicegui>=2.17.0"
+]
+authors = [
+    { name = "Davis Thomas Daniel", email = "davisthomasdaniel@gmail.com" }
+]
+
+[project.urls]
+Homepage = "https://github.com/davistdaniel/kurup"
+Issues = "https://github.com/davistdaniel/kurup/issues"
+Documentation = "https://github.com/davistdaniel/kurup"
+Repository = "https://github.com/davistdaniel/kurup"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
