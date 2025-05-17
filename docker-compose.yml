@@ -1,0 +1,28 @@
+services:
+  app:
+    image: zauberzeug/nicegui:latest
+    container_name: kurup-app
+    restart: always
+
+    ports:
+      - "9494:9494"  # Host port : Container port
+
+    environment:
+      - PUID=1000    # Set to your user ID (run `id -u` to find it)
+      - PGID=1000    # Set to your group ID (run `id -g` to find it)
+
+    volumes:
+      - ./:/app/     # Mounts your project directory to /app in the container
+
+      # Optional: persist notes outside the container
+      # Uncomment and edit the line below to store notes on your host machine
+      # - /home/yourusername/Documents/notes/:/notes/
+      #
+      # If you use this, make sure the folder exists on your host:
+      # mkdir -p /home/yourusername/Documents/notes
+
+    # Default command runs your main.py
+    command: python main.py
+
+    # Optional: customize the port or notes directory
+    # command: python main.py --port 9494 --notes_dir "/notes"
