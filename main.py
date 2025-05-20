@@ -236,22 +236,55 @@ class MyNotes:
 
     def create_my_notes_ui(self):
         """Create the UI for the my notes tab"""
-        with ui.row().classes("w-full q-pa-md"):
-            search_input = ui.input(placeholder="Search notes...").classes("w-full").props("id=search-notes")
+
+        options = [
+            'Most recent',
+            'Least recent',
+            'Title (A–Z)',
+            'Title (Z–A)',
+        ]
+        with ui.column().classes("w-full q-pa-md"):
+            search_input = ui.input(placeholder="Type to search notes...",on_change=lambda: self.refresh_notes(search_term=search_input.value)).classes("w-full").props("id=search-notes")
             ui.button(
                 "Refresh",
-                on_click=lambda: self.refresh_notes(search_input.value),
+                on_click=lambda: self.refresh_notes(search_term=""),
                 icon="refresh",
-            ).classes("q-ml-md").props("id=refresh-notes")
+            ).props("id=refresh-notes")
+        
+            sort_option = ui.select(options=options,value='Most recent',on_change=lambda: self.sort_notes(sorting=sort_option.value))
+
+
 
         self.notes_container = ui.element("div").classes("w-full").props("id=notes-container")
         self.refresh_notes()
 
-    def refresh_notes(self, search_term=""):
+    def sort_notes(self,sorting):
+        current_notes = notes_handler.update_notes_list(NOTES_DIR)
+        options = [
+            'Most recent',
+            'Least recent',
+            'Title (A–Z)',
+            'Title (Z–A)',
+        ]
+        if sorting==options[0]:
+            current_notes.sort(key=lambda note: note['modified'],reverse=True)
+        elif sorting==options[1]:
+            current_notes.sort(key=lambda note: note['modified'])
+        elif sorting==options[2]:
+            current_notes.sort(key=lambda note: note['filename'])          
+        elif sorting==options[3]:
+            current_notes.sort(key=lambda note: note['filename'],reverse=True)
+        else:
+            current_notes.sort(key=lambda note: note['modified'],reverse=True)
+        
+        self.refresh_notes(current_notes=current_notes)
+
+    def refresh_notes(self, current_notes=None,search_term=""):
         """Refresh the notes list with search"""
         logging.info("Refreshing saved notes.")
         self.notes_container.clear()
-        current_notes = notes_handler.update_notes_list(NOTES_DIR)
+        if not current_notes:
+            current_notes = notes_handler.update_notes_list(NOTES_DIR)
 
         if not current_notes:
             with self.notes_container:

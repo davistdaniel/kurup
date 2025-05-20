@@ -143,7 +143,7 @@ class NotesHandler():
         """
         self.note_list = []
 
-        for filepath in notes_dir.iterdir():
+        for filepath in sorted(notes_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True):
             if filepath.suffix == '.md' and not filepath.name.startswith('.'):
                 filename = filepath.name
                 kr_filepath = notes_dir / f".{filename}.kurup"
