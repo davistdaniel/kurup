@@ -245,10 +245,10 @@ class MyNotes:
             'Title (Z–A)',
         ]
         with ui.column().classes("w-full q-pa-md"):
-            search_input = ui.input(placeholder="Type to search notes...",on_change=lambda: self.refresh_notes(search_term=search_input.value)).classes("w-full").props("id=search-notes")
+            self.search_input = ui.input(placeholder="Type to search notes...",on_change=lambda: self.refresh_notes(search_term=self.search_input.value)).classes("w-full").props("id=search-notes")
             ui.button(
                 "Refresh",
-                on_click=lambda: self.sort_notes(sorting=self.sort_option.value),
+                on_click=lambda: self.sort_notes(sorting=self.sort_option.value,search_term=self.search_input.value),
                 icon="refresh",
             ).props("id=refresh-notes")
         
@@ -258,7 +258,7 @@ class MyNotes:
         self.notes_container = ui.element("div").classes("w-full").props("id=notes-container")
         self.refresh_notes()
 
-    def sort_notes(self,sorting='Most recent'):
+    def sort_notes(self,sorting='Most recent',search_term=""):
         current_notes = notes_handler.update_notes_list(NOTES_DIR)
         options = [
             'Most recent',
@@ -280,7 +280,7 @@ class MyNotes:
         else:
             current_notes.sort(key=lambda note: note['modified'],reverse=True)
         
-        self.refresh_notes(current_notes=current_notes)
+        self.refresh_notes(current_notes=current_notes,search_term=search_term)
 
     def refresh_notes(self, current_notes=None,search_term=""):
         """Refresh the notes list with search"""
