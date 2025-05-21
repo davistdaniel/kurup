@@ -20,6 +20,7 @@
 import uuid
 import shutil
 import json
+import re
 import logging
 import sys
 import argparse
@@ -247,18 +248,17 @@ class MyNotes:
             search_input = ui.input(placeholder="Type to search notes...",on_change=lambda: self.refresh_notes(search_term=search_input.value)).classes("w-full").props("id=search-notes")
             ui.button(
                 "Refresh",
-                on_click=lambda: self.refresh_notes(search_term=""),
+                on_click=lambda: self.sort_notes(sorting=self.sort_option.value),
                 icon="refresh",
             ).props("id=refresh-notes")
         
-            sort_option = ui.select(options=options,value='Most recent',on_change=lambda: self.sort_notes(sorting=sort_option.value))
-
-
+            self.sort_option = ui.select(options=options,value='Most recent',on_change=lambda: self.sort_notes(sorting=self.sort_option.value))
+            self.sort_option.set_value('Most recent')
 
         self.notes_container = ui.element("div").classes("w-full").props("id=notes-container")
         self.refresh_notes()
 
-    def sort_notes(self,sorting):
+    def sort_notes(self,sorting='Most recent'):
         current_notes = notes_handler.update_notes_list(NOTES_DIR)
         options = [
             'Most recent',
@@ -266,14 +266,17 @@ class MyNotes:
             'Title (A–Z)',
             'Title (Z–A)',
         ]
+        def natural_key(note):
+            return [int(text) if text.isdigit() else text.lower()
+                    for text in re.split(r'([0-9]+)', note['filename'])]
         if sorting==options[0]:
             current_notes.sort(key=lambda note: note['modified'],reverse=True)
         elif sorting==options[1]:
             current_notes.sort(key=lambda note: note['modified'])
         elif sorting==options[2]:
-            current_notes.sort(key=lambda note: note['filename'])          
+            current_notes.sort(key=natural_key)        
         elif sorting==options[3]:
-            current_notes.sort(key=lambda note: note['filename'],reverse=True)
+            current_notes.sort(key=natural_key,reverse=True)
         else:
             current_notes.sort(key=lambda note: note['modified'],reverse=True)
         
