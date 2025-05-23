@@ -23,6 +23,8 @@
 - **Export** - Download notes as zip files with images included
 - **Simple Interface** - Simple, no-frills and lightweight
 
+If you find this project helpful, please consider giving it a ⭐ to show your support.
+
 ## 📸 Screenshots
 
 <!-- Add your screenshots here -->
