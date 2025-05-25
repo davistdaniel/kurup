@@ -134,7 +134,7 @@ class NewNote:
         )
 
         logging.info("Creating New Note tab")
-        self.note_title = ui.input(placeholder="Title").classes("w-full")
+        self.note_title = ui.input(placeholder="Title",validation={'Title too long': lambda value: len(value) <= 99}).props('maxlength=100').classes("w-full")
 
         with ui.column().classes("w-full"):
             self.note_area = (

@@ -151,11 +151,11 @@ class NotesHandler():
 
                 try:
                     content = filepath.read_text(encoding='utf-8')
-                    lines = content.splitlines()
+                    #lines = content.splitlines()
 
                     title = filepath.stem.replace('_', ' ')
-                    if lines and lines[0].startswith('# '):
-                        title = lines[0][2:]
+                    # if lines and lines[0].startswith('# '):
+                    #     title = lines[0][2:]
 
                     modified_time = datetime.fromtimestamp(filepath.stat().st_mtime)
 
