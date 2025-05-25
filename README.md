@@ -68,6 +68,8 @@ In the "Saved" tab you can:
 
 ## 🚀 Getting Started
 
+This project is under active development. Please make a separate backup of your notes.
+
 ### Prerequisites
 
 - Python 3.11 or higher
