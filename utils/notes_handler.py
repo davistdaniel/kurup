@@ -23,6 +23,7 @@ from nicegui import ui
 import zipfile
 import threading
 import time
+import logging
 
 # kurup
 from utils.image_handler import get_image_refs, save_images
@@ -198,9 +199,11 @@ class NotesHandler():
                 ui.notify(f"Deleted {note['filename']}")
                 if callback:
                     callback()
+                logging.info(f"Deleted {note['filename']}")
             else:
                 ui.notify(f"Failed to delete {note['filename']}", color='negative')
             dialog.close()
+
         
         dialog = ui.dialog()
         with dialog:
@@ -311,6 +314,7 @@ class NotesHandler():
             temp_image_handler.temp_images = []
 
             ui.notify(f"Saved changes to {note['filename']}")
+            logging.info(f"Saved changes to {note['filename']}")
 
         except Exception as e:
             ui.notify(f"Error saving changes: {str(e)}", color='negative')

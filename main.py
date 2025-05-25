@@ -208,7 +208,7 @@ class NewNote:
         self.markdown_area.set_content("")
 
         if self.my_notes_reference:
-            self.my_notes_reference.refresh_notes()
+            self.my_notes_reference.sort_notes()
 
         self.note_area.set_label(get_random_label('note'))
         set_heading_labels()
@@ -258,7 +258,7 @@ class MyNotes:
         self.notes_container = ui.element("div").classes("w-full").props("id=notes-container")
         self.refresh_notes()
 
-    def sort_notes(self,sorting='Most recent',search_term=""):
+    def sort_notes(self,sorting=None,search_term=""):
         current_notes = notes_handler.update_notes_list(NOTES_DIR)
         options = [
             'Most recent',
@@ -269,6 +269,9 @@ class MyNotes:
         def natural_key(note):
             return [int(text) if text.isdigit() else text.lower()
                     for text in re.split(r'([0-9]+)', note['filename'])]
+        
+        if sorting is None:
+            sorting = self.sort_option.value
         if sorting==options[0]:
             current_notes.sort(key=lambda note: note['modified'],reverse=True)
         elif sorting==options[1]:
@@ -374,16 +377,14 @@ class MyNotes:
 
     def delete_note_click(self, note):
         """Handle delete note button click"""
-        notes_handler.delete_note(note, NOTES_DIR, self.refresh_notes)
-        logging.info(f"Deleted note {note['filename']}")
+        notes_handler.delete_note(note, NOTES_DIR,self.sort_notes)
 
     def save_edits_click(self, edit_area, note):
         """Handle save edits button click"""
         notes_handler.save_note_edits(
             temp_image_handler, edit_area.value, note, NOTES_DIR, TEMP_DIR
         )
-        self.refresh_notes()
-        logging.info(f"Changes saved for note {note['filename']}")
+        self.sort_notes(sorting=self.sort_option.value)
 
     def edit_area_change(self):
         """Handle edit area change event"""
