@@ -1,6 +1,6 @@
 [project]
 name = "kurup"
-version = "0.1.0"
+version = "0.1.1"
 description = "A modern Python app powered by NiceGUI"
 readme = "README.md"
 requires-python = ">=3.11"
