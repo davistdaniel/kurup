@@ -24,6 +24,7 @@ import re
 import logging
 import sys
 import argparse
+import urllib
 from datetime import datetime
 from fastapi import UploadFile
 from nicegui import app, ui
@@ -63,7 +64,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-
+CURRENT_VERSION = "0.1.1"
+UPDATE_BADGE = None
 # Setup
 BASE_DIR = Path(__file__).parent.resolve()
 NOTES_DIR = BASE_DIR / args.notes_dir
@@ -85,7 +87,6 @@ app.add_static_files("/static", str(STATIC_DIR))
 temp_image_handler = TempImageHandler()
 notes_handler = NotesHandler()
 #walkthrough_handler = WalkthroughHandler(BASE_DIR)
-# global, so that it can be updated 
 note_area_labels = get_random_label('note')
 heading_label = get_random_label('heading')
 quote_label = None 
@@ -244,19 +245,83 @@ class MyNotes:
             'Title (A–Z)',
             'Title (Z–A)',
         ]
+
         with ui.column().classes("w-full q-pa-md"):
-            self.search_input = ui.input(placeholder="Type to search notes...",on_change=lambda: self.refresh_notes(search_term=self.search_input.value)).classes("w-full").props("id=search-notes")
+            self.search_input = ui.input(placeholder="Search notes...",on_change=lambda: self.on_search_input(search_term=self.search_input.value)).classes("w-full text-base").props("id=search-notes")
+            self.notes_select = ui.select(
+                options=[],
+                label="Select a note...",
+                on_change=self.on_note_selected,
+                with_input=True,
+                new_value_mode="add",
+                clearable=False
+            ).classes("w-full text-base").props("id=select-notes use-input")
+            
             ui.button(
-                "Refresh",
-                on_click=lambda: self.sort_notes(sorting=self.sort_option.value,search_term=self.search_input.value),
+                "Reset",
+                on_click=lambda: self.sort_notes(sorting=self.sort_option.value),
                 icon="refresh",
             ).props("id=refresh-notes")
-        
+
             self.sort_option = ui.select(options=options,value='Most recent',on_change=lambda: self.sort_notes(sorting=self.sort_option.value))
             self.sort_option.set_value('Most recent')
 
         self.notes_container = ui.element("div").classes("w-full").props("id=notes-container")
         self.refresh_notes()
+
+    def on_search_input(self, search_term=""):
+        """Handle search input - filter notes as user types"""
+        if search_term is not None:
+            search_term = search_term.lower()
+        if not hasattr(self, 'all_notes_cache'):
+            return
+        
+        if search_term:
+            filtered_notes = [
+                note for note in self.all_notes_cache
+                if search_term in note["title"].lower() 
+                or search_term in note["content"].lower()
+            ]
+        else:
+            filtered_notes = self.all_notes_cache
+
+        self.notes_container.clear()
+        if not filtered_notes:
+            with self.notes_container:
+                ui.label(f"No notes found matching '{search_term}'").classes("text-h6 q-pa-md")
+        else:
+            for note in filtered_notes:
+                self._create_note_card(note)
+
+    def refresh_notes_options(self, current_notes):
+        """Refresh the notes selection dropdown options"""
+        if not current_notes:
+            self.notes_select.set_options([])
+            return
+        
+        options = []
+        self.notes_data = {}  
+        
+        for note in current_notes:
+            display_title = note["title"] if note["title"] != "Untitled" else f"Untitled ({note['filename']})"
+            options.append(display_title)
+            self.notes_data[display_title] = note
+        
+        self.notes_select.set_options(options)
+        if options:
+            self.notes_select.set_value(None)
+
+    def on_note_selected(self):
+        """Handle note selection from dropdown"""
+        if not self.notes_select.value or self.notes_select.value not in self.notes_data:
+            self.notes_container.clear()
+            if hasattr(self, 'current_notes_cache') and self.current_notes_cache:
+                for note in self.current_notes_cache:
+                    self._create_note_card(note)
+            return
+        selected_note = self.notes_data[self.notes_select.value]
+        self.notes_container.clear()
+        self._create_note_card(selected_note)
 
     def sort_notes(self,sorting=None,search_term=""):
         current_notes = notes_handler.update_notes_list(NOTES_DIR)
@@ -283,36 +348,30 @@ class MyNotes:
         else:
             current_notes.sort(key=lambda note: note['modified'],reverse=True)
         
-        self.refresh_notes(current_notes=current_notes,search_term=search_term)
+        #self.refresh_notes(current_notes=current_notes,search_term=search_term)
+        self.refresh_notes(current_notes=current_notes)
+        if search_term=="":
+            self.search_input.set_value(None)
 
-    def refresh_notes(self, current_notes=None,search_term=""):
-        """Refresh the notes list with search"""
+    def refresh_notes(self, current_notes=None):
+        """Refresh the notes list and dropdown options"""
         logging.info("Refreshing saved notes.")
         self.notes_container.clear()
+        
         if not current_notes:
             current_notes = notes_handler.update_notes_list(NOTES_DIR)
 
+        self.all_notes_cache = current_notes
+        self.current_notes_cache = current_notes
+        
+        # Update dropdown options
+        self.refresh_notes_options(current_notes)
+        
         if not current_notes:
             with self.notes_container:
                 ui.label("No notes found").classes("text-h6 q-pa-md")
-                return
-
-        if search_term:
-            search_term = search_term.lower()
-            current_notes = [
-                note
-                for note in current_notes
-                if search_term in note["title"].lower()
-                or search_term in note["content"].lower()
-            ]
-
-            if not current_notes:
-                with self.notes_container:
-                    ui.label(f"No notes found matching '{search_term}'").classes(
-                        "text-h6 q-pa-md"
-                    )
-                return
-
+            return
+        
         for note in current_notes:
             self._create_note_card(note)
 
@@ -397,9 +456,30 @@ class MyNotes:
         notes_handler.download_note(note, NOTES_DIR, TEMP_DIR)
         logging.info(f"Downloaded note {note['filename']}")
 
+
+def check_for_update():
+    global UPDATE_BADGE
+    try:
+        with urllib.request.urlopen("https://api.github.com/repos/davistdaniel/kurup/releases/latest") as response:
+            data = json.loads(response.read())
+            latest_version = data["tag_name"].lstrip("v")
+            if latest_version != CURRENT_VERSION:
+                ui.notify(f"New version available: {latest_version}. Current version: {CURRENT_VERSION}")
+                if UPDATE_BADGE:
+                    UPDATE_BADGE.set_text('!')
+                    UPDATE_BADGE.style('display: block')
+            else:
+                ui.notify("You're using the latest version of kurup.", color="positive")
+                if UPDATE_BADGE:
+                    UPDATE_BADGE.style('display: none')
+    except Exception as e:
+        ui.notify("Error checking for updates.", color="negative")
+        logging.error(f"Failed to check for updates: {e}")
+
+
 def create_ui():
     """Create the main UI for the application"""
-    global quote_label
+    global quote_label,UPDATE_BADGE
     my_notes = MyNotes()
     new_note = NewNote()
 
@@ -422,9 +502,11 @@ def create_ui():
 
     with ui.header().classes("bg-[#e9f5d0] dark:bg-[#3c542d]"):
         ui.image("./static/logo.webp").classes("w-64").props("id=kurup-logo")
-        with ui.link(target='https://github.com/davistdaniel/kurup', new_tab=True):
-            ui.image('https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png') \
-                .classes("w-8").tooltip("View on GitHub")
+        with ui.button("", on_click=check_for_update,icon="system_update_alt").classes("w-10 h-10").tooltip("Check for a newer version of kurup"):
+            UPDATE_BADGE = ui.badge('', color='red').props('floating').style('display: none')
+        
+        ui.button("", on_click=lambda: ui.navigate.to('https://github.com/davistdaniel/kurup', new_tab=True),icon="code").classes("w-10 h-10").tooltip("View on GitHub")
+        
 
     with ui.tabs().classes("w-96") as tabs:
         new_note_tab = ui.tab("New").props("id=new-note-tab")
