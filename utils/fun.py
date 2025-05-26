@@ -44,6 +44,18 @@ note_area_labels = [
     "Time to write your masterpiece!",
     "Create something awesome!",
     "This is where the magic happens!",
+    "Spill the digital tea...",
+    "Where typos become poetry.",
+    "Go on, write like no one’s going to read it.",
+    "Dear diary... just kidding, sort of.",
+    "A safe space for chaotic brilliance.",
+    "Scribble something genius-ish.",
+    "Channel your inner Shakespeare (or not).",
+    "Type now, edit never.",
+    "No pressure, but this could change the world.",
+    "Brainstorm, rainstorm, thoughtstorm—go!",
+    "This box loves your nonsense.",
+    "Go ahead, write that novel tweet-length."
 ]
 
 heading_labels = [
@@ -62,5 +74,12 @@ heading_labels = [
     "Where thoughts check in but never check out.",
     "Thought-hoarder's anonymous, digital edition.",
     "Because writing on your palm is so last century.",
-    "Separating the noteworthy from the not-worthy."
+    "Separating the noteworthy from the not-worthy.",
+    "The cloud’s least judgmental corner.",
+    "Better than scribbles on your hand.",
+    "Because napkin notes are not cloud-compatible.",
+    "Smarter than paper. Dumber than AI.",
+    "The official home of ‘I'll remember this later.’",
+    "Where your notes come to overstay their welcome.",
+    "Made with 0% judgment, 100% space for ideas."
     ]
