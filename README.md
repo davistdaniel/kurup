@@ -30,7 +30,7 @@ If you find this project helpful, please consider giving it a ⭐ to show your s
 
 <!-- Add your screenshots here -->
 <div align="center">
-  <img src="./static/screenshot.svg" alt="kurup logo" width="1000"/>
+  <img src="./static/screenshot.webp" alt="kurup logo" width="1000"/>
 </div>
 
 ## 💻 Usage
