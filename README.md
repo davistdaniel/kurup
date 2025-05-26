@@ -15,6 +15,7 @@
 
 - **Markdown Support** - Write notes using simple markdown formatting
 - **Live Preview**: See your formatted content instantly as you type.
+- **Quick Format** : Quick format buttons for easier writing in markdown format.
 - **Note Management** : View, edit, delete and download saved notes from within the app.
 - **Image Embedding** - Paste images directly from your clipboard
 - **Search Functionality** - Filter notes with a search term.
