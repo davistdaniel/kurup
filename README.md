@@ -38,10 +38,38 @@ If you find this project helpful, please consider giving it a ⭐ to show your s
 
 1. Open the "New" tab
 2. Enter a title (optional)
-3. Write your note content using markdown syntax
+3. Write your note content using markdown syntax and quick format buttons
+    - Quick format :  Bold, Italic, Underline, Strikethrough, H1, H2, H3, code
 4. Press the "Save" button
 
-#### Embedding Images
+### Markdown Syntax Guide
+
+| Syntax              | Output                   | Example                    |
+|---------------------|--------------------------|----------------------------|
+| `**bold**`          | **bold**                 | `**This is bold**`         |
+| `*italic*`          | *italic*                 | `*This is italic*`         |
+| `<u>underline</u>`     | <u>underline</u>  | `<u>This is underlined</u>`   |
+| `<s>strike</s>`        | ~~strike~~               | `<s>This is struck</s>`       |
+| `# Heading 1`       | Heading 1                | `# Heading 1`              |
+| `## Heading 2`      | Heading 2                | `## Heading 2`             |
+| `### Heading 3`     | Heading 3                | `### Heading 3`            |
+| `` `inline code` `` | `inline code`            | `` `code` ``               |
+
+For code blocks use : 
+
+```markdown
+```python
+def hello_world():
+  print('This is kurup.')
+``` 
+which renders to:
+
+```python
+def hello_world():
+  print('This is kurup.')
+```
+
+### Embedding Images
 
 Simply paste images from your clipboard directly into the note area. Images are automatically:
 - Displayed in the preview
@@ -52,9 +80,12 @@ Simply paste images from your clipboard directly into the note area. Images are 
   <img src="./static/gif1.gif" alt="notes-gif" width="1000"/>
 </div>
 
+
 ### Managing Notes
 
 In the "Saved" tab you can:
+- **Search** - Search notes and its contents
+- **Select** - Select saved notes to view from a dropdown
 - **Preview** - Read your notes with formatted markdown
 - **Raw** - View the raw markdown
 - **Edit** - Make changes to existing notes
