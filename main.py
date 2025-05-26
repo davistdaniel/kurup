@@ -128,6 +128,17 @@ class NewNote:
         logging.info("Set reference to MyNotes tab.")
         self.my_notes_reference = my_notes
 
+    def validate_title(self, e):
+        title = e.value.strip()
+        if (
+            title in [note["title"] for note in self.my_notes_reference.all_notes_cache]
+            or len(title) > 99
+            or not title
+        ):
+            self.save_button.disable()
+        else:
+            self.save_button.enable()
+
     def create_new_note_ui(self):
         """Create the UI for the new note tab"""
         global note_label
@@ -140,8 +151,16 @@ class NewNote:
         logging.info("Creating New Note tab")
         self.note_title = (
             ui.input(
-                placeholder="Title",
-                validation={"Title too long": lambda value: len(value) <= 99},
+                on_change=self.validate_title,
+                placeholder="Type a unique title...",
+                validation={
+                    "Title too long": lambda value: len(value) <= 99,
+                    "A note with this title already exists, choose a different title.": lambda value: value
+                    not in [
+                        note["title"]
+                        for note in self.my_notes_reference.all_notes_cache
+                    ],
+                },
             )
             .props("maxlength=100")
             .classes("w-full")
@@ -255,7 +274,7 @@ class NewNote:
         """Save button click event"""
 
         if self.note_area.value == "":
-            ui.notify("Nothing to save!")
+            ui.notify("Nothing to save!", color="negative")
             return
 
         if self.note_title.value:
@@ -277,7 +296,7 @@ class NewNote:
         kurup_file_path.write_text(json.dumps(kurup_metadata), encoding="utf-8")
         logging.info(f"Saved kurup metadata for {filename}.")
 
-        ui.notify(f"Saved as {filename}")
+        ui.notify(f"Saved as {filename}", color="positive")
         self._clean_all_temp_images()
         self.note_title.value = ""
         self.note_area.value = ""
@@ -693,7 +712,6 @@ def create_ui():
                 ),
                 icon="code",
             ).classes("w-10 h-10").tooltip("View on GitHub")
-    
 
     with ui.tabs().classes("w-96") as tabs:
         new_note_tab = ui.tab("New").props("id=new-note-tab")
@@ -712,5 +730,5 @@ def create_ui():
 # create the UI and start the app
 logging.info("Starting kurup: a simple markdown-based notes app")
 create_ui()
-#check_for_update()
+# check_for_update()
 ui.run(port=args.port, favicon=STATIC_DIR / "favicon.svg", title="kurup")
