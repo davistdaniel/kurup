@@ -21,6 +21,7 @@ import uuid
 import shutil
 import json
 import re
+import time
 import logging
 import sys
 import argparse
@@ -34,7 +35,7 @@ from pathlib import Path
 from utils.image_handler import TempImageHandler, get_image_refs, save_images
 from utils.notes_handler import NotesHandler
 from utils.fun import get_random_label
-#from utils.walkthrough_handler import WalkthroughHandler
+# from utils.walkthrough_handler import WalkthroughHandler
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,10 +87,11 @@ app.add_static_files("/static", str(STATIC_DIR))
 # handlers for images and notes
 temp_image_handler = TempImageHandler()
 notes_handler = NotesHandler()
-#walkthrough_handler = WalkthroughHandler(BASE_DIR)
-note_area_labels = get_random_label('note')
-heading_label = get_random_label('heading')
-quote_label = None 
+# walkthrough_handler = WalkthroughHandler(BASE_DIR)
+note_area_labels = get_random_label("note")
+heading_label = get_random_label("heading")
+quote_label = None
+
 
 # pasted images handling
 @app.post("/upload_image")
@@ -103,10 +105,12 @@ async def upload_image(file: UploadFile):
     temp_image_handler.temp_images.append(file_name)
     return {"url": f"/{TEMP_DIR.name}/{file_name}"}
 
+
 def set_heading_labels():
     global quote_label
-    heading_label = get_random_label('heading')
+    heading_label = get_random_label("heading")
     quote_label.set_text(heading_label)
+
 
 # new note tab
 class NewNote:
@@ -131,13 +135,81 @@ class NewNote:
             ui.button("Save", on_click=self.save_button_clicked)
             .classes("w-43")
             .props("id=save-note-button")
-            
         )
 
         logging.info("Creating New Note tab")
-        self.note_title = ui.input(placeholder="Title",validation={'Title too long': lambda value: len(value) <= 99}).props('maxlength=100').classes("w-full")
+        self.note_title = (
+            ui.input(
+                placeholder="Title",
+                validation={"Title too long": lambda value: len(value) <= 99},
+            )
+            .props("maxlength=100")
+            .classes("w-full")
+        )
 
         with ui.column().classes("w-full"):
+            # Add formatting toolbar
+            with ui.row().classes("w-full q-mb-sm"):
+                ui.button(
+                    "",
+                    icon="format_bold",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'bold')"
+                    ),
+                ).props("size=sm").tooltip("Bold (Ctrl+B)")
+
+                ui.button(
+                    "",
+                    icon="format_italic",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'italic')"
+                    ),
+                ).props("size=sm").tooltip("Italic (Ctrl+I)")
+
+                ui.button(
+                    "",
+                    icon="format_underlined",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'underline')"
+                    ),
+                ).props("size=sm").tooltip("Underline (Ctrl+U)")
+
+                ui.button(
+                    "",
+                    icon="format_strikethrough",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'strikethrough')"
+                    ),
+                ).props("size=sm").tooltip("Strikethrough")
+
+                ui.button(
+                    "H1",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'h1')"
+                    ),
+                ).props("size=sm").tooltip("Heading 1")
+
+                ui.button(
+                    "H2",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'h2')"
+                    ),
+                ).props("size=sm").tooltip("Heading 2")
+
+                ui.button(
+                    "H3",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'h3')"
+                    ),
+                ).props("size=sm").tooltip("Heading 3")
+
+                ui.button(
+                    "{ }",
+                    on_click=lambda: ui.run_javascript(
+                        "toggleFormatting('noteTextarea', 'code')"
+                    ),
+                ).props("size=sm").tooltip("Code block")
+
             self.note_area = (
                 ui.textarea(label=note_area_labels, on_change=self.update_markdown)
                 .classes("w-full")
@@ -150,7 +222,10 @@ class NewNote:
                     ui.markdown("").classes("w-full").props("id=markdownPreview")
                 )
 
-        # script for pasted images handling
+        timestamp = str(int(time.time()))
+        ui.add_body_html(
+            f'<script src="./static/text_formatter.js?v={timestamp}"></script>'
+        )
         ui.add_body_html('<script src="./static/image_handler.js"></script>')
         ui.add_body_html('<script src="./static/edit_image_handler.js"></script>')
 
@@ -211,7 +286,7 @@ class NewNote:
         if self.my_notes_reference:
             self.my_notes_reference.sort_notes()
 
-        self.note_area.set_label(get_random_label('note'))
+        self.note_area.set_label(get_random_label("note"))
         set_heading_labels()
 
     def _clean_all_temp_images(self):
@@ -240,46 +315,66 @@ class MyNotes:
         """Create the UI for the my notes tab"""
 
         options = [
-            'Most recent',
-            'Least recent',
-            'Title (A–Z)',
-            'Title (Z–A)',
+            "Most recent",
+            "Least recent",
+            "Title (A–Z)",
+            "Title (Z–A)",
         ]
 
         with ui.column().classes("w-full q-pa-md"):
-            self.search_input = ui.input(placeholder="Search notes...",on_change=lambda: self.on_search_input(search_term=self.search_input.value)).classes("w-full text-base").props("id=search-notes")
-            self.notes_select = ui.select(
-                options=[],
-                label="Select a note...",
-                on_change=self.on_note_selected,
-                with_input=True,
-                new_value_mode="add",
-                clearable=False
-            ).classes("w-full text-base").props("id=select-notes use-input")
-            
+            self.search_input = (
+                ui.input(
+                    placeholder="Search notes...",
+                    on_change=lambda: self.on_search_input(
+                        search_term=self.search_input.value
+                    ),
+                )
+                .classes("w-full text-base")
+                .props("id=search-notes")
+            )
+            self.notes_select = (
+                ui.select(
+                    options=[],
+                    label="Select a note...",
+                    on_change=self.on_note_selected,
+                    with_input=True,
+                    new_value_mode="add",
+                    clearable=False,
+                )
+                .classes("w-full text-base")
+                .props("id=select-notes use-input")
+            )
+
             ui.button(
                 "Reset",
                 on_click=lambda: self.sort_notes(sorting=self.sort_option.value),
                 icon="refresh",
             ).props("id=refresh-notes")
 
-            self.sort_option = ui.select(options=options,value='Most recent',on_change=lambda: self.sort_notes(sorting=self.sort_option.value))
-            self.sort_option.set_value('Most recent')
+            self.sort_option = ui.select(
+                options=options,
+                value="Most recent",
+                on_change=lambda: self.sort_notes(sorting=self.sort_option.value),
+            )
+            self.sort_option.set_value("Most recent")
 
-        self.notes_container = ui.element("div").classes("w-full").props("id=notes-container")
+        self.notes_container = (
+            ui.element("div").classes("w-full").props("id=notes-container")
+        )
         self.refresh_notes()
 
     def on_search_input(self, search_term=""):
         """Handle search input - filter notes as user types"""
         if search_term is not None:
             search_term = search_term.lower()
-        if not hasattr(self, 'all_notes_cache'):
+        if not hasattr(self, "all_notes_cache"):
             return
-        
+
         if search_term:
             filtered_notes = [
-                note for note in self.all_notes_cache
-                if search_term in note["title"].lower() 
+                note
+                for note in self.all_notes_cache
+                if search_term in note["title"].lower()
                 or search_term in note["content"].lower()
             ]
         else:
@@ -288,7 +383,9 @@ class MyNotes:
         self.notes_container.clear()
         if not filtered_notes:
             with self.notes_container:
-                ui.label(f"No notes found matching '{search_term}'").classes("text-h6 q-pa-md")
+                ui.label(f"No notes found matching '{search_term}'").classes(
+                    "text-h6 q-pa-md"
+                )
         else:
             for note in filtered_notes:
                 self._create_note_card(note)
@@ -298,24 +395,31 @@ class MyNotes:
         if not current_notes:
             self.notes_select.set_options([])
             return
-        
+
         options = []
-        self.notes_data = {}  
-        
+        self.notes_data = {}
+
         for note in current_notes:
-            display_title = note["title"] if note["title"] != "Untitled" else f"Untitled ({note['filename']})"
+            display_title = (
+                note["title"]
+                if note["title"] != "Untitled"
+                else f"Untitled ({note['filename']})"
+            )
             options.append(display_title)
             self.notes_data[display_title] = note
-        
+
         self.notes_select.set_options(options)
         if options:
             self.notes_select.set_value(None)
 
     def on_note_selected(self):
         """Handle note selection from dropdown"""
-        if not self.notes_select.value or self.notes_select.value not in self.notes_data:
+        if (
+            not self.notes_select.value
+            or self.notes_select.value not in self.notes_data
+        ):
             self.notes_container.clear()
-            if hasattr(self, 'current_notes_cache') and self.current_notes_cache:
+            if hasattr(self, "current_notes_cache") and self.current_notes_cache:
                 for note in self.current_notes_cache:
                     self._create_note_card(note)
             return
@@ -323,55 +427,58 @@ class MyNotes:
         self.notes_container.clear()
         self._create_note_card(selected_note)
 
-    def sort_notes(self,sorting=None,search_term=""):
+    def sort_notes(self, sorting=None, search_term=""):
         current_notes = notes_handler.update_notes_list(NOTES_DIR)
         options = [
-            'Most recent',
-            'Least recent',
-            'Title (A–Z)',
-            'Title (Z–A)',
+            "Most recent",
+            "Least recent",
+            "Title (A–Z)",
+            "Title (Z–A)",
         ]
+
         def natural_key(note):
-            return [int(text) if text.isdigit() else text.lower()
-                    for text in re.split(r'([0-9]+)', note['filename'])]
-        
+            return [
+                int(text) if text.isdigit() else text.lower()
+                for text in re.split(r"([0-9]+)", note["filename"])
+            ]
+
         if sorting is None:
             sorting = self.sort_option.value
-        if sorting==options[0]:
-            current_notes.sort(key=lambda note: note['modified'],reverse=True)
-        elif sorting==options[1]:
-            current_notes.sort(key=lambda note: note['modified'])
-        elif sorting==options[2]:
-            current_notes.sort(key=natural_key)        
-        elif sorting==options[3]:
-            current_notes.sort(key=natural_key,reverse=True)
+        if sorting == options[0]:
+            current_notes.sort(key=lambda note: note["modified"], reverse=True)
+        elif sorting == options[1]:
+            current_notes.sort(key=lambda note: note["modified"])
+        elif sorting == options[2]:
+            current_notes.sort(key=natural_key)
+        elif sorting == options[3]:
+            current_notes.sort(key=natural_key, reverse=True)
         else:
-            current_notes.sort(key=lambda note: note['modified'],reverse=True)
-        
-        #self.refresh_notes(current_notes=current_notes,search_term=search_term)
+            current_notes.sort(key=lambda note: note["modified"], reverse=True)
+
+        # self.refresh_notes(current_notes=current_notes,search_term=search_term)
         self.refresh_notes(current_notes=current_notes)
-        if search_term=="":
+        if search_term == "":
             self.search_input.set_value(None)
 
     def refresh_notes(self, current_notes=None):
         """Refresh the notes list and dropdown options"""
         logging.info("Refreshing saved notes.")
         self.notes_container.clear()
-        
+
         if not current_notes:
             current_notes = notes_handler.update_notes_list(NOTES_DIR)
 
         self.all_notes_cache = current_notes
         self.current_notes_cache = current_notes
-        
+
         # Update dropdown options
         self.refresh_notes_options(current_notes)
-        
+
         if not current_notes:
             with self.notes_container:
                 ui.label("No notes found").classes("text-h6 q-pa-md")
             return
-        
+
         for note in current_notes:
             self._create_note_card(note)
 
@@ -420,11 +527,73 @@ class MyNotes:
                 ui.code(note["content"], language="markdown").classes("w-full")
 
             with ui.tab_panel(edit_tab):
+                edit_textarea_id = f"edit-textarea-{uuid.uuid4().hex[:8]}"
+                with ui.row().classes("w-full q-mb-sm"):
+                    ui.button(
+                        "",
+                        icon="format_bold",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'bold')"
+                        ),
+                    ).props("size=sm").tooltip("Bold (Ctrl/Cmd+B)")
+
+                    ui.button(
+                        "",
+                        icon="format_italic",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'italic')"
+                        ),
+                    ).props("size=sm").tooltip("Italic (Ctrl/Cmd+I)")
+
+                    ui.button(
+                        "",
+                        icon="format_underlined",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'underline')"
+                        ),
+                    ).props("size=sm").tooltip("Underline (Ctrl/Cmd+U)")
+
+                    ui.button(
+                        "",
+                        icon="format_strikethrough",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'strikethrough')"
+                        ),
+                    ).props("size=sm").tooltip("Strikethrough")
+
+                    ui.button(
+                        "H1",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'h1')"
+                        ),
+                    ).props("size=sm").tooltip("Heading 1")
+
+                    ui.button(
+                        "H2",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'h2')"
+                        ),
+                    ).props("size=sm").tooltip("Heading 2")
+
+                    ui.button(
+                        "H3",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'h3')"
+                        ),
+                    ).props("size=sm").tooltip("Heading 3")
+
+                    ui.button(
+                        "{ }",
+                        on_click=lambda id=edit_textarea_id: ui.run_javascript(
+                            f"toggleFormatting('{id}', 'code')"
+                        ),
+                    ).props("size=sm").tooltip("Code block")
+
                 edit_area = (
                     ui.textarea(value=note["content"], on_change=self.edit_area_change)
                     .classes("w-full")
                     .style("min-height: 100px")
-                    .props("id=EditNoteTextarea")
+                    .props(f"id={edit_textarea_id}")
                 )
 
                 with ui.row().classes("w-full justify-start q-mt-md"):
@@ -436,7 +605,7 @@ class MyNotes:
 
     def delete_note_click(self, note):
         """Handle delete note button click"""
-        notes_handler.delete_note(note, NOTES_DIR,self.sort_notes)
+        notes_handler.delete_note(note, NOTES_DIR, self.sort_notes)
 
     def save_edits_click(self, edit_area, note):
         """Handle save edits button click"""
@@ -460,18 +629,22 @@ class MyNotes:
 def check_for_update():
     global UPDATE_BADGE
     try:
-        with urllib.request.urlopen("https://api.github.com/repos/davistdaniel/kurup/releases/latest") as response:
+        with urllib.request.urlopen(
+            "https://api.github.com/repos/davistdaniel/kurup/releases/latest"
+        ) as response:
             data = json.loads(response.read())
             latest_version = data["tag_name"].lstrip("v")
             if latest_version != CURRENT_VERSION:
-                ui.notify(f"New version available: {latest_version}. Current version: {CURRENT_VERSION}")
+                ui.notify(
+                    f"A new version of kurup is available: {latest_version}. Current version: {CURRENT_VERSION}"
+                )
                 if UPDATE_BADGE:
-                    UPDATE_BADGE.set_text('!')
-                    UPDATE_BADGE.style('display: block')
+                    UPDATE_BADGE.set_text("!")
+                    UPDATE_BADGE.style("display: block")
             else:
                 ui.notify("You're using the latest version of kurup.", color="positive")
                 if UPDATE_BADGE:
-                    UPDATE_BADGE.style('display: none')
+                    UPDATE_BADGE.style("display: none")
     except Exception as e:
         ui.notify("Error checking for updates.", color="negative")
         logging.error(f"Failed to check for updates: {e}")
@@ -479,14 +652,14 @@ def check_for_update():
 
 def create_ui():
     """Create the main UI for the application"""
-    global quote_label,UPDATE_BADGE
+    global quote_label, UPDATE_BADGE
     my_notes = MyNotes()
     new_note = NewNote()
 
     # this is needed for refreshing the my_notes tab when a new note is saved
     new_note.set_my_notes_reference(my_notes)
     dark = ui.dark_mode()
-    
+
     def toggle_dark_mode(e):
         if e.value:
             dark.enable()
@@ -494,19 +667,33 @@ def create_ui():
             dark.disable()
 
     with ui.grid(columns=2):
-        ui.label('Welcome to kurup.').classes("text-2xl text-bold")
-        ui.switch("⏾", value=False, on_change=toggle_dark_mode).props("id=dark-mode-switch")
+        ui.label("Welcome to kurup.").classes("text-2xl text-bold")
+        ui.switch("⏾", value=False, on_change=toggle_dark_mode).props(
+            "id=dark-mode-switch"
+        )
 
-    quote_label = ui.label(f'{heading_label}').classes("text-l text-italic")
-
+    quote_label = ui.label(f"{heading_label}").classes("text-l text-italic")
 
     with ui.header().classes("bg-[#e9f5d0] dark:bg-[#3c542d]"):
         ui.image("./static/logo.webp").classes("w-64").props("id=kurup-logo")
-        with ui.button("", on_click=check_for_update,icon="system_update_alt").classes("w-10 h-10").tooltip("Check for a newer version of kurup"):
-            UPDATE_BADGE = ui.badge('', color='red').props('floating').style('display: none')
-        
-        ui.button("", on_click=lambda: ui.navigate.to('https://github.com/davistdaniel/kurup', new_tab=True),icon="code").classes("w-10 h-10").tooltip("View on GitHub")
-        
+        with ui.column():
+            with (
+                ui.button("", on_click=check_for_update, icon="system_update_alt")
+                .classes("w-10 h-10")
+                .tooltip("Check for a newer version of kurup")
+            ):
+                UPDATE_BADGE = (
+                    ui.badge("", color="red").props("floating").style("display: none")
+                )
+
+            ui.button(
+                "",
+                on_click=lambda: ui.navigate.to(
+                    "https://github.com/davistdaniel/kurup", new_tab=True
+                ),
+                icon="code",
+            ).classes("w-10 h-10").tooltip("View on GitHub")
+    
 
     with ui.tabs().classes("w-96") as tabs:
         new_note_tab = ui.tab("New").props("id=new-note-tab")
@@ -518,12 +705,12 @@ def create_ui():
 
         with ui.tab_panel(my_notes_tab):
             my_notes.create_my_notes_ui()
-    
-#walkthrough_handler.setup_walkthrough()
+
+
+# walkthrough_handler.setup_walkthrough()
 
 # create the UI and start the app
 logging.info("Starting kurup: a simple markdown-based notes app")
 create_ui()
-ui.run(port=args.port,favicon=STATIC_DIR / 'favicon.ico',title='kurup')
-
-
+#check_for_update()
+ui.run(port=args.port, favicon=STATIC_DIR / "favicon.svg", title="kurup")
