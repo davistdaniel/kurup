@@ -19,7 +19,7 @@
 - **Note Management** : View, edit, delete and download saved notes from within the app.
 - **Image Embedding** - Paste images directly from your clipboard
 - **Search Functionality** - Filter notes with a search term.
-- **Local Storage** - All notes are stored locally in plain-text
+- **Local Storage** - All notes are stored locally in plain-text, no database required.
 - **Import** - Simply place markdown notes in kurup's notes folder
 - **Export** - Download notes as zip files with images included
 - **Simple Interface** - Simple, no-frills and lightweight
@@ -106,7 +106,7 @@ This project is under active development. Please make a separate backup of your 
 
 - Python 3.11 or higher
 
-### Python
+### Using Python
 
 ```bash
 # Clone the repository
@@ -123,7 +123,7 @@ python main.py
 http://localhost:9494
 ```
 
-### Docker (using NiceGUI's docker image)
+### Using Docker (using NiceGUI's docker image)
 ```bash
 # Clone the repository
 git clone https://github.com/davistdaniel/kurup
@@ -136,6 +136,38 @@ sudo docker compose up -d
 http://localhost:9494
 ```
 
+## 🔄 Updating
+
+> [!NOTE]  
+> It is recommended to make a backup of your `notes` folder before updating.
+
+### Python
+```bash
+# Pull the latest changes from the repository
+git pull origin main
+
+# (Optional) Reinstall dependencies in case of updates
+python -m pip install -r requirements.txt
+
+# Run the updated application
+python main.py
+
+# Open your web browser and navigate to:
+http://localhost:9494
+```
+
+### Docker
+```bash
+# Pull the latest changes from the repository
+git pull origin main
+
+# restart the container
+sudo docker compose down
+sudo docker compose up -d
+
+# Open your web browser and navigate to:
+http://localhost:9494
+```
 
 ## ⚙️ Configuration
 
