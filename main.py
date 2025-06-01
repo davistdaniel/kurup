@@ -508,7 +508,7 @@ class MyNotes:
     def _create_note_card(self, note):
         """Create a card for a single note"""
         with self.notes_container:
-            logger.info(f"Creating note card for {note["title"]} in my notes.")
+            logger.info(f"Creating note card for {note['title']} in my notes.")
             with ui.card().classes("q-mb-md"):
                 with ui.card_section():
                     ui.label(note["title"]).classes("text-h6")
