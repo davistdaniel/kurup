@@ -23,7 +23,6 @@ import json
 import re
 import time
 import logging
-import sys
 import argparse
 import urllib
 from datetime import datetime
@@ -37,13 +36,18 @@ from utils.notes_handler import NotesHandler
 from utils.fun import get_random_label
 # from utils.walkthrough_handler import WalkthroughHandler
 
-logging.basicConfig(
-    level=logging.INFO,
-    stream=sys.stdout,
-    format="%(name)s: %(asctime)s | %(levelname)s | %(filename)s:%(lineno)s >>> %(message)s",
-    datefmt="%d-%m-%Y %H:%M:%S",
-    force=True,
-)
+
+# logging setup
+logger = logging.getLogger("kurup_logger")
+logger.setLevel(logging.INFO)
+
+if not logger.hasHandlers():  
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(name)s: %(asctime)s | %(levelname)s | %(filename)s:%(lineno)s >>> %(message)s")    
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
 parser = argparse.ArgumentParser(
     description="kurup : a simple markdown-based note taking app"
@@ -73,8 +77,8 @@ NOTES_DIR = BASE_DIR / args.notes_dir
 TEMP_DIR = BASE_DIR / "temp"
 STATIC_DIR = BASE_DIR / "static"
 
-logging.info(f"Notes will be saved at {NOTES_DIR}")
-logging.info(f"Temporary files will be saved at {TEMP_DIR}")
+logger.info(f"Notes will be saved at {NOTES_DIR}")
+logger.info(f"Temporary files will be saved at {TEMP_DIR}")
 
 NOTES_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -125,7 +129,7 @@ class NewNote:
 
     def set_my_notes_reference(self, my_notes):
         """Set reference to MyNotes to allow refreshing list after save"""
-        logging.info("Set reference to MyNotes tab.")
+        logger.info("Set reference to MyNotes tab.")
         self.my_notes_reference = my_notes
 
     def validate_title(self, e):
@@ -148,7 +152,7 @@ class NewNote:
             .props("id=save-note-button")
         )
 
-        logging.info("Creating New Note tab")
+        logger.info("Creating New Note tab")
         self.note_title = (
             ui.input(
                 on_change=self.validate_title,
@@ -250,7 +254,7 @@ class NewNote:
 
     def update_markdown(self):
         """Update markdown preview and clean up unused temp images"""
-        logging.debug("Markdown updated.")
+        logger.debug("Markdown updated.")
         self.markdown_area.set_content(self.note_area.value)
 
         temp_image_handler.temp_image_refs = get_image_refs(
@@ -266,9 +270,9 @@ class NewNote:
                     if img_path.exists():
                         img_path.unlink()
                     temp_image_handler.temp_images.remove(img)
-                    logging.info(f"Removed temporary file not referenced: {img_path}")
+                    logger.info(f"Removed temporary file which is not referenced: {img_path}")
                 except Exception as e:
-                    logging.error(f"Error removing temp image {img}: {e}")
+                    logger.error(f"Error removing temp image {img}: {e}")
 
     def save_button_clicked(self):
         """Save button click event"""
@@ -289,12 +293,12 @@ class NewNote:
 
         note_path = NOTES_DIR / filename
         note_path.write_text(updated_content, encoding="utf-8")
-        logging.info(f"Saved note titled {filename}.")
+        logger.info(f"Saved note titled {filename}.")
 
         kurup_metadata = {filename: img_list}
         kurup_file_path = NOTES_DIR / f".{filename}.kurup"
         kurup_file_path.write_text(json.dumps(kurup_metadata), encoding="utf-8")
-        logging.info(f"Saved kurup metadata for {filename}.")
+        logger.info(f"Saved kurup metadata for {filename}.")
 
         ui.notify(f"Saved as {filename}", color="positive")
         self._clean_all_temp_images()
@@ -315,9 +319,9 @@ class NewNote:
                 img_path = TEMP_DIR / img
                 if img_path.exists():
                     img_path.unlink()
-                    logging.info(f"Removed temporary image file: {img_path}")
+                    logger.info(f"Removed temporary image file: {img_path}")
             except Exception as e:
-                logging.error(f"Error cleaning up temp image {img}: {e}")
+                logger.error(f"Error cleaning up temp image {img}: {e}")
 
         temp_image_handler.temp_images = []
 
@@ -365,7 +369,7 @@ class MyNotes:
             )
 
             ui.button(
-                "Reset",
+                "Refresh",
                 on_click=lambda: self.sort_notes(sorting=self.sort_option.value),
                 icon="refresh",
             ).props("id=refresh-notes")
@@ -481,7 +485,7 @@ class MyNotes:
 
     def refresh_notes(self, current_notes=None):
         """Refresh the notes list and dropdown options"""
-        logging.info("Refreshing saved notes.")
+        logger.info("Refreshing saved notes.")
         self.notes_container.clear()
 
         if not current_notes:
@@ -504,7 +508,7 @@ class MyNotes:
     def _create_note_card(self, note):
         """Create a card for a single note"""
         with self.notes_container:
-            logging.info("Creating note card in my notes.")
+            logger.info(f"Creating note card for {note["title"]} in my notes.")
             with ui.card().classes("q-mb-md"):
                 with ui.card_section():
                     ui.label(note["title"]).classes("text-h6")
@@ -642,7 +646,7 @@ class MyNotes:
 
     def download_note_click(self, note, NOTES_DIR, TEMP_DIR):
         notes_handler.download_note(note, NOTES_DIR, TEMP_DIR)
-        logging.info(f"Downloaded note {note['filename']}")
+        logger.info(f"Downloaded note {note['filename']}")
 
 
 def check_for_update():
@@ -666,7 +670,7 @@ def check_for_update():
                     UPDATE_BADGE.style("display: none")
     except Exception as e:
         ui.notify("Error checking for updates.", color="negative")
-        logging.error(f"Failed to check for updates: {e}")
+        logger.error(f"Failed to check for updates: {e}")
 
 
 def create_ui():
@@ -728,7 +732,7 @@ def create_ui():
 # walkthrough_handler.setup_walkthrough()
 
 # create the UI and start the app
-logging.info("Starting kurup: a simple markdown-based notes app")
+logger.info("Starting kurup: a simple markdown-based notes app")
 create_ui()
 # check_for_update()
 ui.run(port=args.port, favicon=STATIC_DIR / "favicon.svg", title="kurup")

@@ -28,6 +28,10 @@ import logging
 # kurup
 from utils.image_handler import get_image_refs, save_images
 
+# logging
+logger = logging.getLogger("kurup_logger")
+
+
 def delete_note_and_images(note, notes_dir):
     """    
     Deletes a note file, associated images, metadata from the specified directory.
@@ -59,7 +63,7 @@ def delete_note_and_images(note, notes_dir):
 
         kurup_path = notes_dir / f".{note['filename']}.kurup"
         kurup_path.unlink(missing_ok=True)
-
+        logger.info(f"Deleted {note['filename']}")
         return True
 
     except Exception as e:
@@ -159,13 +163,18 @@ class NotesHandler():
 
                     modified_time = datetime.fromtimestamp(filepath.stat().st_mtime)
 
-                    try:
-                        kurup_data = json.loads(kr_filepath.read_text(encoding='utf-8'))
-                    except FileNotFoundError:
-                        kurup_data = {}
-
                     pattern = rf"!\[.*?\]\(/{notes_dir.name}/([^)]+)\)"
                     image_refs = list(set(re.findall(pattern, content)))
+
+                    try:
+                        kurup_data = json.loads(kr_filepath.read_text(encoding='utf-8'))
+                        logger.info(f"kurup metadata file read from {str(kr_filepath.name)}")
+                    except FileNotFoundError:
+                        logger.warning(f"kurup metadata file not found at {str(kr_filepath.name)}")
+                        logger.info(f"Creating kurup metadata file at {str(kr_filepath.name)}")
+                        kurup_metadata = {filename: image_refs}
+                        kr_filepath.write_text(json.dumps(kurup_metadata), encoding="utf-8")
+                        kurup_data = json.loads(kr_filepath.read_text(encoding='utf-8'))
 
                     self.note_list.append({
                         'filename': filename,

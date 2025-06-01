@@ -19,15 +19,9 @@
 import re
 import shutil
 import logging
-import sys
 
-logging.basicConfig(
-    level=logging.INFO,
-    stream=sys.stdout,
-    format="%(name)s: %(asctime)s | %(levelname)s | %(filename)s:%(lineno)s >>> %(message)s",
-    datefmt="%d-%m-%Y %H:%M:%S",
-    force=True,
-)
+# logging
+logger = logging.getLogger("kurup_logger") 
 
 def get_image_refs(note_area_val, directory):
     """    
@@ -81,7 +75,7 @@ def save_images(current_note_area_val, notes_dir, temp_dir):
         source = temp_dir / filename
         destination = notes_dir / filename
 
-        logging.info(f"Moving {filename} from {source} to {destination}")
+        logger.info(f"Moving {filename} from {source} to {destination}")
         shutil.move(source, destination)
 
         old_ref = match.group(0)
