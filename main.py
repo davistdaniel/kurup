@@ -23,8 +23,8 @@ import json
 import re
 import time
 import logging
-import argparse
 import urllib
+from argparse import ArgumentParser
 from datetime import datetime
 from fastapi import UploadFile
 from nicegui import app, ui
@@ -33,23 +33,22 @@ from pathlib import Path
 # kurup
 from utils.image_handler import TempImageHandler, get_image_refs, save_images
 from utils.notes_handler import NotesHandler
-from utils.fun import get_random_label
+from utils.fun import get_random_label,get_tag_colors
 # from utils.walkthrough_handler import WalkthroughHandler
 
 
 # logging setup
 logger = logging.getLogger("kurup_logger")
 logger.setLevel(logging.INFO)
-
 if not logger.hasHandlers():  
-
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
     formatter = logging.Formatter("%(name)s: %(asctime)s | %(levelname)s | %(filename)s:%(lineno)s >>> %(message)s")    
     ch.setFormatter(formatter)
     logger.addHandler(ch)
 
-parser = argparse.ArgumentParser(
+# argument parsing
+parser = ArgumentParser(
     description="kurup : a simple markdown-based note taking app"
 )
 parser.add_argument(
@@ -58,28 +57,40 @@ parser.add_argument(
     default="notes",
     help="directory where notes and files should be saved",
 )
-
 parser.add_argument(
     "--port",
     type=int,
     default=9494,
     help="Port to serve the app",
 )
-
-
 args = parser.parse_args()
 
+
+# GLOBAL VARIABLES
+
+## version and update setup
 CURRENT_VERSION = "0.1.1"
 UPDATE_BADGE = None
-# Setup
+
+## directory setup
 BASE_DIR = Path(__file__).parent.resolve()
 NOTES_DIR = BASE_DIR / args.notes_dir
 TEMP_DIR = BASE_DIR / "temp"
 STATIC_DIR = BASE_DIR / "static"
-
 logger.info(f"Notes will be saved at {NOTES_DIR}")
 logger.info(f"Temporary files will be saved at {TEMP_DIR}")
 
+## tags related
+INIT_TAGS_DATA = {}
+TAGS_DATA = {}  
+CURRENT_TAGS = {}
+AVAILABLE_COLORS = get_tag_colors()
+
+## Labels
+QUOTE_LABEL = None
+STATUS_LABEL = None
+
+# make directories
 NOTES_DIR.mkdir(parents=True, exist_ok=True)
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -93,9 +104,7 @@ temp_image_handler = TempImageHandler()
 notes_handler = NotesHandler()
 # walkthrough_handler = WalkthroughHandler(BASE_DIR)
 note_area_labels = get_random_label("note")
-heading_label = get_random_label("heading")
-quote_label = None
-
+quote = get_random_label("quote")
 
 # pasted images handling
 @app.post("/upload_image")
@@ -109,12 +118,13 @@ async def upload_image(file: UploadFile):
     temp_image_handler.temp_images.append(file_name)
     return {"url": f"/{TEMP_DIR.name}/{file_name}"}
 
-
-def set_heading_labels():
-    global quote_label
-    heading_label = get_random_label("heading")
-    quote_label.set_text(heading_label)
-
+def set_quotes():
+    """
+    Sets random labels in the UI when a note is saved.
+    """
+    global QUOTE_LABEL
+    quote = get_random_label("quote")
+    QUOTE_LABEL.set_text(quote)
 
 # new note tab
 class NewNote:
@@ -127,59 +137,58 @@ class NewNote:
         self.save_button = None
         self.my_notes_reference = None
 
-    def set_my_notes_reference(self, my_notes):
-        """Set reference to MyNotes to allow refreshing list after save"""
-        logger.info("Set reference to MyNotes tab.")
-        self.my_notes_reference = my_notes
-
-    def validate_title(self, e):
-        title = e.value.strip()
-        if (
-            title in [note["title"] for note in self.my_notes_reference.all_notes_cache]
-            or len(title) > 99
-            or not title
-        ):
-            self.save_button.disable()
-        else:
-            self.save_button.enable()
-
     def create_new_note_ui(self):
         """Create the UI for the new note tab"""
         global note_label
-        self.save_button = (
-            ui.button("Save", on_click=self.save_button_clicked)
-            .classes("w-43")
-            .props("id=save-note-button")
-        )
 
         logger.info("Creating New Note tab")
-        self.note_title = (
-            ui.input(
-                on_change=self.validate_title,
-                placeholder="Type a unique title...",
-                validation={
-                    "Title too long": lambda value: len(value) <= 99,
-                    "A note with this title already exists, choose a different title.": lambda value: value
-                    not in [
-                        note["title"]
-                        for note in self.my_notes_reference.all_notes_cache
-                    ],
-                },
+        with ui.row():
+            self.note_title = (
+                ui.input(
+                    on_change=self._validate_title,
+                    label="Title",
+                    validation={
+                        "Title too long": lambda value: len(value) <= 99,
+                        "A note with this title already exists, choose a different title.": lambda value: value
+                        not in [
+                            note["title"]
+                            for note in self.my_notes_reference.all_notes_cache
+                        ],
+                    },
+                )
+                .props("maxlength=100")
+                .classes("w-96")
             )
-            .props("maxlength=100")
-            .classes("w-full")
-        )
+
+            self.tags_select = ui.select(
+                options=list(TAGS_DATA.keys()),
+                multiple=True,
+                label="Tags",
+                with_input=True,
+                new_value_mode="add",
+                on_change=self.on_tags_change,
+                clearable=True,
+            ).props("maxlength=40").classes("flex w-48")
+            
+        with ui.column().classes("w-full"):
+            self.selected_tags_area = ui.row().classes("w-full q-mb-sm")
 
         with ui.column().classes("w-full"):
-            # Add formatting toolbar
+            # add formatting toolbar
             with ui.row().classes("w-full q-mb-sm"):
+                # save button
+                self.save_button = (
+                    ui.button("", on_click=self.save_button_clicked,icon="save",color="secondary")
+                    .classes("w-43")
+                    .props("id=save-note-button size=sm").tooltip("Save note.")
+                )
                 ui.button(
                     "",
                     icon="format_bold",
                     on_click=lambda: ui.run_javascript(
                         "toggleFormatting('noteTextarea', 'bold')"
                     ),
-                ).props("size=sm").tooltip("Bold (Ctrl+B)")
+                ).props("size=sm").tooltip("Bold (Ctrl/Cmd+B)")
 
                 ui.button(
                     "",
@@ -187,7 +196,7 @@ class NewNote:
                     on_click=lambda: ui.run_javascript(
                         "toggleFormatting('noteTextarea', 'italic')"
                     ),
-                ).props("size=sm").tooltip("Italic (Ctrl+I)")
+                ).props("size=sm").tooltip("Italic (Ctrl/Cmd+I)")
 
                 ui.button(
                     "",
@@ -234,7 +243,7 @@ class NewNote:
                 ).props("size=sm").tooltip("Code block")
 
             self.note_area = (
-                ui.textarea(label=note_area_labels, on_change=self.update_markdown)
+                ui.textarea(label=note_area_labels, on_change=self._update_markdown)
                 .classes("w-full")
                 .props("id=noteTextarea")
             )
@@ -252,7 +261,7 @@ class NewNote:
         ui.add_body_html('<script src="./static/image_handler.js"></script>')
         ui.add_body_html('<script src="./static/edit_image_handler.js"></script>')
 
-    def update_markdown(self):
+    def _update_markdown(self):
         """Update markdown preview and clean up unused temp images"""
         logger.debug("Markdown updated.")
         self.markdown_area.set_content(self.note_area.value)
@@ -276,11 +285,16 @@ class NewNote:
 
     def save_button_clicked(self):
         """Save button click event"""
-
+        global CURRENT_TAGS
+        # nothing in the note_area.
         if self.note_area.value == "":
             ui.notify("Nothing to save!", color="negative")
             return
+        
+        # tags
+        tags = list(CURRENT_TAGS.keys()) or []
 
+        # content in note area
         if self.note_title.value:
             filename = f"{self.note_title.value.replace(' ', '_')}.md"
         else:
@@ -290,27 +304,37 @@ class NewNote:
         updated_content, img_list = save_images(
             self.note_area.value, NOTES_DIR, TEMP_DIR
         )
-
+        
+        # write the note
         note_path = NOTES_DIR / filename
         note_path.write_text(updated_content, encoding="utf-8")
         logger.info(f"Saved note titled {filename}.")
 
-        kurup_metadata = {filename: img_list}
+        # kurup_metadata = {filename: img_list} (until v.0.1.1)
+        kurup_metadata = {filename: {"images": img_list, "tags": tags}} 
         kurup_file_path = NOTES_DIR / f".{filename}.kurup"
         kurup_file_path.write_text(json.dumps(kurup_metadata), encoding="utf-8")
         logger.info(f"Saved kurup metadata for {filename}.")
 
         ui.notify(f"Saved as {filename}", color="positive")
+
+        # cleanup
         self._clean_all_temp_images()
         self.note_title.value = ""
         self.note_area.value = ""
         self.markdown_area.set_content("")
+        self.tags_select.set_options(list(TAGS_DATA.keys()))
+        self.tags_select.set_value([])
+        self.selected_tags_area.clear()
+        CURRENT_TAGS = {}
 
+        # refresh notes
         if self.my_notes_reference:
             self.my_notes_reference.sort_notes()
 
+        # set new label message
         self.note_area.set_label(get_random_label("note"))
-        set_heading_labels()
+        set_quotes()
 
     def _clean_all_temp_images(self):
         """Clean up all temporary images"""
@@ -325,6 +349,35 @@ class NewNote:
 
         temp_image_handler.temp_images = []
 
+    def _validate_title(self, e):
+        title = e.value.strip()
+        if (
+            title in [note["title"] for note in self.my_notes_reference.all_notes_cache]
+            or len(title) > 99
+        ):
+            self.save_button.disable()
+        else:
+            self.save_button.enable()
+
+    def on_tags_change(self, e):
+        global TAGS_DATA, CURRENT_TAGS
+        self.selected_tags_area.clear()
+        if e.value:
+            for tag in e.value:
+                if tag not in TAGS_DATA:
+                    TAGS_DATA[tag] = AVAILABLE_COLORS[len(TAGS_DATA) % len(AVAILABLE_COLORS)]
+                CURRENT_TAGS[tag] = tag
+                with self.selected_tags_area:
+                    ui.chip(tag, removable=True,icon='label',color=TAGS_DATA[tag],on_value_change= lambda _,t=tag: self.remove_tag(t))
+
+    def remove_tag(self, tag):
+        
+        CURRENT_TAGS.pop(tag,None)
+        if tag not in INIT_TAGS_DATA:
+            TAGS_DATA.pop(tag,None)
+        self.tags_select.set_options(list(TAGS_DATA.keys()))
+        self.tags_select.set_value(list(CURRENT_TAGS.keys()))
+
 
 # my note tab
 class MyNotes:
@@ -333,6 +386,8 @@ class MyNotes:
     def __init__(self):
         self.notes_container = None
         self.edit_area = None
+        self.new_note_refrence = None
+        
 
     def create_my_notes_ui(self):
         """Create the UI for the my notes tab"""
@@ -344,15 +399,24 @@ class MyNotes:
             "Title (Z–A)",
         ]
 
-        with ui.column().classes("w-full q-pa-md"):
+        with ui.row().classes("w-full q-pa-md justify-center"):
+            global STATUS_LABEL
+
+            self.sort_option = ui.select(
+                options=options,
+                value="Most recent",
+                on_change=lambda: self.sort_notes(sorting=self.sort_option.value),
+            ).classes("w-32 text-base")
+            
+            
             self.search_input = (
                 ui.input(
-                    placeholder="Search notes...",
+                    label="Search notes...",
                     on_change=lambda: self.on_search_input(
                         search_term=self.search_input.value
                     ),
                 )
-                .classes("w-full text-base")
+                .classes("w-96 text-base")
                 .props("id=search-notes")
             )
             self.notes_select = (
@@ -362,29 +426,32 @@ class MyNotes:
                     on_change=self.on_note_selected,
                     with_input=True,
                     new_value_mode="add",
-                    clearable=False,
+                    clearable=True,
                 )
-                .classes("w-full text-base")
+                .classes("w-96 text-base")
                 .props("id=select-notes use-input")
             )
-
+            
+            # refresh button
             ui.button(
-                "Refresh",
-                on_click=lambda: self.sort_notes(sorting=self.sort_option.value),
+                "",
+                on_click=lambda: self.sort_notes(
+                    sorting=self.sort_option.value
+                ),
                 icon="refresh",
-            ).props("id=refresh-notes")
-
-            self.sort_option = ui.select(
-                options=options,
-                value="Most recent",
-                on_change=lambda: self.sort_notes(sorting=self.sort_option.value),
-            )
-            self.sort_option.set_value("Most recent")
+            ).classes("w-16 h-14").props("id=refresh-notes").tooltip("Refresh notes.")
+     
+        STATUS_LABEL = ui.label(f"Processing {len(notes_handler.note_list)} notes ...").classes("text-s")
 
         self.notes_container = (
-            ui.element("div").classes("w-full").props("id=notes-container")
+            ui.element("div")
+            .classes("flex flex-wrap gap-4 justify-center")
+            .style("""
+                align-items: stretch;
+            """)
+            .props("id=notes-container")
         )
-        self.refresh_notes()
+        #self.refresh_notes()
 
     def on_search_input(self, search_term=""):
         """Handle search input - filter notes as user types"""
@@ -399,6 +466,7 @@ class MyNotes:
                 for note in self.all_notes_cache
                 if search_term in note["title"].lower()
                 or search_term in note["content"].lower()
+                or search_term in [tag.lower() for tag in note["tags"]]
             ]
         else:
             filtered_notes = self.all_notes_cache
@@ -450,8 +518,8 @@ class MyNotes:
         self.notes_container.clear()
         self._create_note_card(selected_note)
 
-    def sort_notes(self, sorting=None, search_term=""):
-        current_notes = notes_handler.update_notes_list(NOTES_DIR)
+    def sort_notes(self, sorting=None, search_term="",current_notes=None):
+        current_notes = current_notes if current_notes is not None else notes_handler.update_notes_list(NOTES_DIR)
         options = [
             "Most recent",
             "Least recent",
@@ -478,18 +546,19 @@ class MyNotes:
         else:
             current_notes.sort(key=lambda note: note["modified"], reverse=True)
 
-        # self.refresh_notes(current_notes=current_notes,search_term=search_term)
         self.refresh_notes(current_notes=current_notes)
+        
         if search_term == "":
             self.search_input.set_value(None)
 
-    def refresh_notes(self, current_notes=None):
-        """Refresh the notes list and dropdown options"""
+    def refresh_notes(self, current_notes=None,create_note_cards=True):
+        global TAGS_DATA
+        
         logger.info("Refreshing saved notes.")
-        self.notes_container.clear()
-
-        if not current_notes:
-            current_notes = notes_handler.update_notes_list(NOTES_DIR)
+        current_notes = current_notes if current_notes is not None else notes_handler.update_notes_list(NOTES_DIR)
+        
+        if self.notes_container:
+            self.notes_container.clear()
 
         self.all_notes_cache = current_notes
         self.current_notes_cache = current_notes
@@ -497,45 +566,103 @@ class MyNotes:
         # Update dropdown options
         self.refresh_notes_options(current_notes)
 
+        all_tags = {tag for note in current_notes if note["tags"] for tag in note["tags"]}
+        tag_keys = list(TAGS_DATA.keys())
+        for tag in tag_keys:
+            if tag not in all_tags:
+                TAGS_DATA.pop(tag,None)
+        
+        for tag in all_tags:
+            if tag not in TAGS_DATA:
+                TAGS_DATA[tag] = AVAILABLE_COLORS[len(TAGS_DATA) % len(AVAILABLE_COLORS)]
+        
+        if self.new_note_reference:
+            self.new_note_reference.tags_select.set_options(list(TAGS_DATA.keys()))
+
         if not current_notes:
             with self.notes_container:
                 ui.label("No notes found").classes("text-h6 q-pa-md")
             return
-
-        for note in current_notes:
-            self._create_note_card(note)
+        
+        if create_note_cards:
+            current_notes_len = len(current_notes)
+            total_tags = 0
+            total_images = 0
+            for idx,note in enumerate(current_notes):
+                total_tags += len(note.get('tags', []))
+                total_images += len(note.get('image_refs', []))
+                self._create_note_card(note)
+            STATUS_LABEL.set_text(f"{current_notes_len} notes, {total_images} images and {total_tags} tags.")
 
     def _create_note_card(self, note):
-        """Create a card for a single note"""
+        """Create a simple card showing only title and basic info"""
+        global TAGS_DATA
+        
         with self.notes_container:
-            logger.info(f"Creating note card for {note['title']} in my notes.")
-            with ui.card().classes("q-mb-md"):
+            with ui.card().classes("q-mb-sm cursor-pointer transition-all duration-800 hover:bg-[#e9f5d0] dark:hover:bg-[#3c542d]").on('click', lambda: self.show_full_note(note)):
+                
+                # Add tooltip with rendered markdown
+                with ui.tooltip().classes('max-w-[50vw] w-fit overflow-hidden'):
+                    preview_content = self._get_markdown_preview(note["content"])
+                    ui.markdown(preview_content).classes('text-xs max-w-[50vw] w-fit')
                 with ui.card_section():
                     ui.label(note["title"]).classes("text-h6")
-                    ui.label(
-                        f"Modified: {note['modified'].strftime('%Y-%m-%d %H:%M')}"
-                    ).classes("text-caption")
+                    ui.label(f"Modified: {note['modified'].strftime('%Y-%m-%d %H:%M')}").classes("text-caption")
+                    if note.get('tags'):
+                        with ui.row().classes("q-mt-xs"):
+                            for tag in note['tags']:
+                                ui.chip(tag, removable=False, icon='label', color=TAGS_DATA.get(tag, '#gray'))
 
-                note_content_id = f"note-content-{uuid.uuid4()}"
+    def _get_markdown_preview(self, content, max_lines=10):
+        """Efficiently return the first `max_lines` lines of markdown content as preview."""
+        if not content:
+            return "No content available"
+        
+        lines = content.splitlines()
+        if len(lines) <= max_lines:
+            return content
+        
+        preview_lines = lines[:max_lines]
+        preview = '\n'.join(preview_lines) + '\n\n*....*'
+        return preview
+    
+    def show_full_note(self, note):
+        dialog = ui.dialog().classes("w-full")
+        with dialog:
+            with ui.card().style("width: 100%; max-width: 95vw;"):
+                with ui.card_section():
 
-                with ui.card_section().classes("w-full").props(f"id={note_content_id}"):
-                    self._create_note_tabs(note)
+                    ui.label(note["title"]).classes("text-h6")
+                    ui.label(f"Modified: {note['modified'].strftime('%Y-%m-%d %H:%M')}").classes("text-caption")
+                    
+                    # some stats, does not have a huge performance impact.
+                    with ui.row().classes("gap-6 mt-3 text-grey-7"):
+                        # count chars
+                        char_count = len(note["content"])
+                        ui.label(f"📝 {char_count:,} characters").classes("text-caption")
+                        
+                        # count word
+                        word_count = len(note["content"].split()) if note["content"].strip() else 0
+                        ui.label(f"🔢 {word_count:,} words").classes("text-caption")
+                        
+                        # calculated using an average of 200 words per min.
+                        reading_time = max(1, round(word_count / 200))
+                        ui.label(f"⏱️ <{reading_time} min read").classes("text-caption")
+                        
+                        # count tags and show them too
+                        if note.get("tags"):
+                            tag_count = len(note["tags"])
+                            ui.label(f"🏷️ {tag_count} tags: {', '.join(note['tags'])}").classes("text-caption")
 
-                with ui.card_actions():
-                    ui.button(
-                        "Delete",
-                        color="negative",
-                        on_click=lambda: self.delete_note_click(note),
-                    )
-                    ui.button(
-                        "Download",
-                        color="primary",
-                        on_click=lambda: self.download_note_click(
-                            note, NOTES_DIR, TEMP_DIR
-                        ),
-                    )
+                with ui.card_section().classes("w-full flex-grow"):
+                    self._create_note_tabs_in_dialog(note)
+                with ui.card_actions().classes("justify-end"):
+                    ui.button("Close", on_click=dialog.close)
+                    ui.button("Delete", color="negative", on_click=lambda: self.delete_note_click(note))
+                    ui.button("Download", color="primary", on_click=lambda: self.download_note_click(note, NOTES_DIR, TEMP_DIR))
+        dialog.open()
 
-    def _create_note_tabs(self, note):
+    def _create_note_tabs_in_dialog(self, note):
         """Create the preview/raw/edit tabs for a note"""
         with ui.tabs().classes("w-96") as note_tabs:
             preview_tab = ui.tab("Preview")
@@ -550,6 +677,16 @@ class MyNotes:
                 ui.code(note["content"], language="markdown").classes("w-full")
 
             with ui.tab_panel(edit_tab):
+
+                self.tags_select = ui.select(
+                    options=list(TAGS_DATA.keys()),
+                    multiple=True,
+                    label="Tags",
+                    value=note.get('tags', []),
+                    with_input=True,
+                    new_value_mode="add"
+                ).classes("w-full q-mb-sm")
+
                 edit_textarea_id = f"edit-textarea-{uuid.uuid4().hex[:8]}"
                 with ui.row().classes("w-full q-mb-sm"):
                     ui.button(
@@ -619,21 +756,16 @@ class MyNotes:
                     .props(f"id={edit_textarea_id}")
                 )
 
-                with ui.row().classes("w-full justify-start q-mt-md"):
-                    ui.button(
-                        "Save Changes",
-                        color="primary",
-                        on_click=lambda: self.save_edits_click(edit_area, note),
-                    )
+                ui.button("Save Changes", color="primary", 
+                        on_click=lambda _: self.save_edits_click(edit_area, note))
 
     def delete_note_click(self, note):
         """Handle delete note button click"""
         notes_handler.delete_note(note, NOTES_DIR, self.sort_notes)
 
     def save_edits_click(self, edit_area, note):
-        """Handle save edits button click"""
         notes_handler.save_note_edits(
-            temp_image_handler, edit_area.value, note, NOTES_DIR, TEMP_DIR
+            temp_image_handler, edit_area.value, note, NOTES_DIR, TEMP_DIR, self.tags_select.value
         )
         self.sort_notes(sorting=self.sort_option.value)
 
@@ -675,12 +807,14 @@ def check_for_update():
 
 def create_ui():
     """Create the main UI for the application"""
-    global quote_label, UPDATE_BADGE
+    global QUOTE_LABEL, UPDATE_BADGE
     my_notes = MyNotes()
     new_note = NewNote()
 
     # this is needed for refreshing the my_notes tab when a new note is saved
-    new_note.set_my_notes_reference(my_notes)
+    new_note.my_notes_reference = my_notes
+    my_notes.new_note_reference = new_note
+
     dark = ui.dark_mode()
 
     def toggle_dark_mode(e):
@@ -695,7 +829,7 @@ def create_ui():
             "id=dark-mode-switch"
         )
 
-    quote_label = ui.label(f"{heading_label}").classes("text-l text-italic")
+    QUOTE_LABEL = ui.label(f"{quote}").classes("text-l text-italic")
 
     with ui.header().classes("bg-[#e9f5d0] dark:bg-[#3c542d]"):
         ui.image("./static/logo.webp").classes("w-64").props("id=kurup-logo")
@@ -728,8 +862,18 @@ def create_ui():
         with ui.tab_panel(my_notes_tab):
             my_notes.create_my_notes_ui()
 
+    # this needs to be done before, so that tags have their colors defined.
+    current_notes = notes_handler.update_notes_list(NOTES_DIR)
+    global TAGS_DATA, INIT_TAGS_DATA
+    all_tags = {tag for note in notes_handler.note_list if note["tags"] for tag in note["tags"]}
+    for tag in all_tags:
+        if tag not in INIT_TAGS_DATA:
+            INIT_TAGS_DATA[tag] = AVAILABLE_COLORS[len(INIT_TAGS_DATA) % len(AVAILABLE_COLORS)]
+    new_note.tags_select.set_options(list(INIT_TAGS_DATA.keys()))
+    TAGS_DATA = INIT_TAGS_DATA.copy()
 
-# walkthrough_handler.setup_walkthrough()
+    # sort the notes initially
+    my_notes.sort_notes(current_notes=current_notes,search_term="")
 
 # create the UI and start the app
 logger.info("Starting kurup: a simple markdown-based notes app")
