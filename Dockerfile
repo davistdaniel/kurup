@@ -16,6 +16,7 @@ COPY notes ./notes
 COPY LICENSE .
 COPY static/edit_image_handler.js ./static/
 COPY static/image_handler.js ./static/
+COPY static/text_formatter.js ./static/
 COPY static/favicon.svg ./static/
 COPY static/logo.webp ./static/
 
