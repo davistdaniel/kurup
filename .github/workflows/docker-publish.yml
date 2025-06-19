@@ -1,8 +1,6 @@
 name: Publish Docker image for Kurup
 
 on:
-  push:
-    branches: [main]
   release:
     types: [published]
 
@@ -40,5 +38,5 @@ jobs:
           push: true
           tags: |
             ghcr.io/davistdaniel/kurup:latest
-            ghcr.io/davistdaniel/kurup:${{ github.sha }}
+            ghcr.io/davistdaniel/kurup:${{ github.event.release.tag_name }}
           labels: ${{ steps.meta.outputs.labels }}
