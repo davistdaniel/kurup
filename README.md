@@ -102,11 +102,48 @@ In the "Saved" tab you can:
 
 This project is under active development. Please make a separate backup of your notes.
 
-### Prerequisites
+
+
+### Using Docker (Recommended)
+
+#### 1. Make a directory for kurup and the notes
+
+```bash
+mkdir -p kurup/notes
+cd kurup
+```
+
+####  2. Make a docker-compose.yml file in the kurup folder with the following contents:
+```bash
+services:
+  kurup:
+    image: ghcr.io/davistdaniel/kurup:latest
+    container_name: kurup
+    ports:
+      - "9494:9494"
+    volumes:
+      - ./notes:/app/notes # make sure the notes folder exists before running the container‚ otherwise the folder will be owned by root.
+      # you can also use a custom path for the notes directory
+      #- /home/yourusername/Documents/notes:/app/notes                        
+    command: ["--notes_dir", "/app/notes"]
+    user: "1000:1000" # set to your own local UID:GID, run `id -u` to find UID and run `id -g` to find GID
+```
+
+#### 3. Start the container
+
+```bash
+sudo docker compose up -d
+```
+
+#### 4. Open your web browser and navigate to:
+
+http://localhost:9494
+
+### Using Python (Tested on Linux, MacOS)
+
+#### Prerequisites
 
 - Python 3.11 or higher
-
-### Using Python
 
 ```bash
 # Clone the repository
@@ -123,18 +160,7 @@ python main.py
 http://localhost:9494
 ```
 
-### Using Docker (using NiceGUI's docker image)
-```bash
-# Clone the repository
-git clone https://github.com/davistdaniel/kurup
-cd kurup
 
-# start the container, you can edit docker-compose.yml to configure
-sudo docker compose up -d
-
-# Open your web browser and navigate to:
-http://localhost:9494
-```
 
 ## 🔄 Updating
 
@@ -158,11 +184,11 @@ http://localhost:9494
 
 ### Docker
 ```bash
-# Pull the latest changes from the repository
-git pull origin main
-
 # restart the container
 sudo docker compose down
+# pull the latest image
+sudo docker compose pull
+# start the container
 sudo docker compose up -d
 
 # Open your web browser and navigate to:
