@@ -1,6 +1,8 @@
 name: Publish Docker image for Kurup
 
 on:
+  push:
+    branches: [main]
   release:
     types: [published]
 

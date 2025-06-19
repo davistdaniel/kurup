@@ -110,6 +110,7 @@ This project is under active development. Please make a separate backup of your 
 
 ```bash
 mkdir -p kurup/notes
+mkdir -p kurup/temp
 cd kurup
 ```
 
