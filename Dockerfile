@@ -17,6 +17,7 @@ COPY LICENSE .
 COPY static/edit_image_handler.js ./static/
 COPY static/image_handler.js ./static/
 COPY static/favicon.svg ./static/
+COPY static/logo.webp ./static/
 
 # Document default port
 EXPOSE 9494

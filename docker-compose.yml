@@ -5,5 +5,5 @@ services:
     ports:
       - "9494:9494"
     volumes:
-      - ./notes:/app/notes
+      - ./:/app/
     command: ["--notes_dir", "notes", "--port", "9494"]
