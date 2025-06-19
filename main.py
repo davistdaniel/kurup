@@ -69,7 +69,7 @@ args = parser.parse_args()
 # GLOBAL VARIABLES
 
 ## version and update setup
-CURRENT_VERSION = "0.1.2"
+CURRENT_VERSION = "0.1.3"
 UPDATE_BADGE = None
 
 ## directory setup
