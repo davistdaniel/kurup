@@ -124,6 +124,7 @@ services:
       - "9494:9494"
     volumes:
       - ./notes:/app/notes # make sure the notes folder exists before running the container‚ otherwise the folder will be owned by root.
+      - ./temp:/app/temp # make sure the notes temp folder exists
       # you can also use a custom path for the notes directory
       #- /home/yourusername/Documents/notes:/app/notes                        
     command: ["--notes_dir", "/app/notes"]
