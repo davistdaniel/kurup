@@ -8,10 +8,10 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN mkdir -p static
+RUN mkdir -p temp
 
 COPY main.py .
 COPY utils ./utils
-COPY temp ./temp
 COPY notes ./notes
 COPY LICENSE .
 COPY static/edit_image_handler.js ./static/
