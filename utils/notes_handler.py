@@ -155,38 +155,44 @@ class NotesHandler():
 
                 try:
                     content = filepath.read_text(encoding='utf-8')
-                    #lines = content.splitlines()
-
                     title = filepath.stem.replace('_', ' ')
-                    # if lines and lines[0].startswith('# '):
-                    #     title = lines[0][2:]
-
                     modified_time = datetime.fromtimestamp(filepath.stat().st_mtime)
-
                     pattern = rf"!\[.*?\]\(/{notes_dir.name}/([^)]+)\)"
                     image_refs = list(set(re.findall(pattern, content)))
 
                     try:
                         kurup_data = json.loads(kr_filepath.read_text(encoding='utf-8'))
                         logger.info(f"kurup metadata file read from {str(kr_filepath.name)}")
+                        if isinstance(kurup_data.get(filename), list):
+                            # old format - just images, until v. 0.1.1
+                            tags = []
+                            images = kurup_data.get(filename, [])
+                        else:
+                            # new format - dict with images and tags
+                            metadata = kurup_data.get(filename, {})
+                            tags = metadata.get('tags', [])
+                            images = metadata.get('images', image_refs)
                     except FileNotFoundError:
                         logger.warning(f"kurup metadata file not found at {str(kr_filepath.name)}")
                         logger.info(f"Creating kurup metadata file at {str(kr_filepath.name)}")
-                        kurup_metadata = {filename: image_refs}
+                        kurup_metadata = {filename: {"images":image_refs,"tags":[]}}
                         kr_filepath.write_text(json.dumps(kurup_metadata), encoding="utf-8")
                         kurup_data = json.loads(kr_filepath.read_text(encoding='utf-8'))
-
+                        tags = []
+                        images = image_refs
+                    
                     self.note_list.append({
                         'filename': filename,
                         'title': title,
                         'modified': modified_time,
                         'content': content,
-                        'image_refs': image_refs,
+                        'image_refs': images,
+                        'tags': tags,
                         'kurup_ref': kurup_data.get(filename)
                     })
-
+                        
                 except Exception as e:
-                    print(f"Error processing note {filename}: {e}")
+                    logger.error(f"Error processing note {filename}: {e}")
 
         return self.note_list
     
@@ -212,6 +218,7 @@ class NotesHandler():
             else:
                 ui.notify(f"Failed to delete {note['filename']}", color='negative')
             dialog.close()
+            dialog.delete()
 
         
         dialog = ui.dialog()
@@ -254,9 +261,9 @@ class NotesHandler():
                 print(f"Error deleting zip file: {e}")
 
         threading.Thread(target=cleanup, daemon=True).start()
+        
 
-    def save_note_edits(self, temp_image_handler, edit_area_val, note, notes_dir, temp_dir):
-
+    def save_note_edits(self, temp_image_handler, edit_area_val, note, notes_dir, temp_dir, tags=None):
         """
         Saves the edited content of a note, including handling images and updating associated metadata.
 
@@ -308,7 +315,12 @@ class NotesHandler():
             except FileNotFoundError:
                 kurup_file_dict = {}
 
-            kurup_file_dict[note['filename']] = new_image_refs
+            if tags is None:
+                tags=[]
+            kurup_file_dict[note['filename']] = {
+                "images": new_image_refs,
+                "tags": tags
+            }
             kr_filepath.write_text(json.dumps(kurup_file_dict), encoding='utf-8')
 
             # delete temp images afterwards, needs tests.

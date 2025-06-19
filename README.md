@@ -87,7 +87,7 @@ Simply paste images from your clipboard directly into the note area. Images are 
 In the "Saved" tab you can:
 - **Search** - Search notes and its contents
 - **Select** - Select saved notes to view from a dropdown
-- **Preview** - Read your notes with formatted markdown
+- **Preview** - Read your notes with formatted markdown, a small preview is also shown when hovered.
 - **Raw** - View the raw markdown
 - **Edit** - Make changes to existing notes
 - **Delete** - Remove notes you no longer need (irreversible!)

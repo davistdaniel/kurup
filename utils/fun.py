@@ -21,9 +21,24 @@ import random
 def get_random_label(param):
     if param =='note':
         return random.choice(note_area_labels)
-    elif param=='heading':
+    elif param=='quote':
         return random.choice(heading_labels)
 
+def get_tag_colors(n=50):
+    tag_colors = [
+        "#CC7A7A", "#E6A366", "#D4D466", "#7ACC7A", "#4DD0E1",
+        "#7A9FCC", "#9966CC", "#E67ACC", "#B8B8B8", "#4DB6AC",
+        "#8FBC8F", "#DAA520", "#5F9EA0", "#6B8E23", "#CD5C5C",
+        "#9370DB", "#D2691E", "#B8860B", "#556B2F", "#8A2BE2",
+        "#20B2AA", "#8FBC8F", "#CD853F", "#DC143C", "#A0522D",
+        "#6A5ACD", "#2E8B57", "#C71585", "#9ACD32", "#FFD700",
+        "#32CD32", "#FF6347", "#4B0082", "#8B008B", "#FF8C00",
+        "#008B8B", "#228B22", "#DC143C", "#00CED1", "#FF4500",
+        "#48D1CC", "#663399", "#BA55D3", "#F4A460", "#008080",
+        "#478A3B", "#4169E1", "#C71585", "#4682B4", "#FF7F50"
+    ]
+
+    return tag_colors
 
 note_area_labels = [
     "What's on your mind?",
