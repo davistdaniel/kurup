@@ -15,7 +15,7 @@ COPY temp ./temp
 COPY notes ./notes
 COPY LICENSE .
 COPY static/edit_image_handler.js ./static/
-COPY static/images_handler.js ./static/
+COPY static/image_handler.js ./static/
 COPY static/favicon.svg ./static/
 
 # Document default port
