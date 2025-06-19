@@ -78,6 +78,8 @@ Simply paste images from your clipboard directly into the note area. Images are 
 - Stored locally with your note
 - Included when you export the note
 
+#### Demo :
+
 <div align="center">
   <img src="./static/gif1.gif" alt="notes-gif" width="1000"/>
 </div>
@@ -94,6 +96,8 @@ In the "Saved" tab you can:
 - **Delete** - Remove notes you no longer need (irreversible!)
 - **Download** - Export individual notes as zip files (includes images)
 
+#### Demo :
+
 <div align="center">
   <img src="./static/gif2.gif" alt="managing_notes" width="1000"/>
 </div>
@@ -102,8 +106,6 @@ In the "Saved" tab you can:
 ## 🚀 Getting Started
 
 This project is under active development. Please make a separate backup of your notes.
-
-
 
 ### Using Docker (Recommended)
 
