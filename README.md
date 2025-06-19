@@ -34,11 +34,6 @@ If you find this project helpful, please consider giving it a ⭐ to show your s
   <img src="./static/screenshot.webp" alt="kurup logo" width="1000"/>
 </div>
 
-# Demo
-
-<video src="./static/kurup_demo.mov" controls="controls" style="max-width: 730px;">
-</video>
-
 ## 💻 Usage
 
 ### Creating a Note
@@ -83,6 +78,10 @@ Simply paste images from your clipboard directly into the note area. Images are 
 - Stored locally with your note
 - Included when you export the note
 
+<div align="center">
+  <img src="./static/gif1.gif" alt="notes-gif" width="1000"/>
+</div>
+
 
 ### Managing Notes
 
@@ -95,6 +94,9 @@ In the "Saved" tab you can:
 - **Delete** - Remove notes you no longer need (irreversible!)
 - **Download** - Export individual notes as zip files (includes images)
 
+<div align="center">
+  <img src="./static/gif2.gif" alt="managing_notes" width="1000"/>
+</div>
 
 
 ## 🚀 Getting Started
