@@ -19,6 +19,7 @@
 import re
 import shutil
 import logging
+from pathlib import PurePosixPath
 
 # logging
 logger = logging.getLogger("kurup_logger") 
@@ -39,8 +40,9 @@ def get_image_refs(note_area_val, directory):
     refs : list of str
         A list of image filenames referenced in the markdown text, with the directory portion removed.
     """
-    pattern = rf"!\[.*?\]\((\/{directory}\/[^)]+)\)"
-    refs = [match.replace(f'/{directory}/', '') for match in re.findall(pattern, note_area_val)]
+    dir_posix = str(PurePosixPath(directory))
+    pattern = rf"!\[.*?\]\((\/{dir_posix}\/[^)]+)\)"
+    refs = [match.replace(f'/{dir_posix}/', '') for match in re.findall(pattern, note_area_val)]
     return refs
 
 def save_images(current_note_area_val, notes_dir, temp_dir):

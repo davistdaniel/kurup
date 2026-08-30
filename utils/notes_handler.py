@@ -212,13 +212,16 @@ class NotesHandler():
         def confirm_delete():
             if delete_note_and_images(note, notes_dir):
                 ui.notify(f"Deleted {note['filename']}")
+                dialog.close()
+                dialog.delete()
+
                 if callback:
                     callback()
                 logging.info(f"Deleted {note['filename']}")
             else:
                 ui.notify(f"Failed to delete {note['filename']}", color='negative')
-            dialog.close()
-            dialog.delete()
+                dialog.close()
+                dialog.delete()
 
         
         dialog = ui.dialog()
